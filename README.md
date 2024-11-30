@@ -5,11 +5,6 @@ This is the official repository of the paper ["Less is More: Making Smaller Lang
 
 ![Less is More](./figs/less_is_more.png)
 
-Contents
----
-
-[TOC]
-
 ### Requirements
 We highly recommend to use different environment for retriever (GSR) and reader, to prevent potential package imcompatible issues. You can install the required packages for all retriever need by running the following command.
 ```bash
@@ -19,13 +14,13 @@ pip install -r requirements.txt
 For installing the reader requirements, you can refer to the official [unsloth library](https://github.com/unslothai/unsloth)
 
 ### Trained Models
-We provide the trained models for both GSR and reader. You can download the models from [here]().
+We provide the trained models for both GSR and reader. You can download the models from [here](https://drive.google.com/drive/folders/1HhFunhrkFbiSN5tS3pvw4lUHscvr9gzo?usp=sharing).
 
 ### Freebase Setup
 In order to obtain the index data, we need to setup Freebase SPARQL service. We follow the instructions provided in [Freebase-Setup](https://github.com/dki-lab/Freebase-Setup) to setup Freebase SPARQL service. Other endpoints should also work, but you might need to adjust the SPARQL query accordingly.
 
 ### Data Preparation
-Following this part you will be able to reconstruct the index data and the retrieval data for training GSR. If you want to skip this part, simply download the processed data from [here](). 
+Following this part you will be able to reconstruct the index data and the retrieval data for training GSR. If you want to skip this part, simply download the processed data from [here](https://drive.google.com/drive/folders/1HhFunhrkFbiSN5tS3pvw4lUHscvr9gzo?usp=sharing). 
 
 #### Index and Retrieval Data
 This part allows you to reconstruct the index data and the retrieval data for training GSR model. You are reqruied to finish the [Freebase setup](#freebase-setup) before running the following commands.
