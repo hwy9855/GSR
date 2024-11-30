@@ -97,8 +97,8 @@ if __name__ == '__main__':
     parser.add_argument("--max_seq_length", type=int, default=4096)
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--num_epochs", type=int, default=3)
-    parser.add_argument("--output_dir", default="outputs/llama2_qlora_chain")
-    parser.add_argument("--train_data", default="sft/llama2_sft_train_chains_3.jsonl")
+    parser.add_argument("--output_dir", default="trained_model/llama2_qlora_chain")
+    parser.add_argument("--train_data", default="processed_data/sft_train_chains.jsonl")
     parser.add_argument("--resume_from_checkpoint", action='store_true')
     
     args = parser.parse_args()

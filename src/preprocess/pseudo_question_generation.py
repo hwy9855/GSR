@@ -27,14 +27,15 @@ def gen_response(prompt, model="gpt-4-turbo-preview", verbose=True):
         
     return response
 
-rel2sample = json.load(open('../data/freebase_rel2sample.json'))
-all_relations = json.load(open('../data/relations_with_triples.json'))
+rel2triple_sample = json.load(open('data/freebase_rel2triple_sample.json'))
+rel2subject_sample = json.load(open('data/freebase_rel2subject_sample.json'))
+all_relations = json.load(open('data/relations_with_triples.json'))[:2]
 
 rel2templates_raw = {}
 for rel in tqdm(all_relations):
     if rel not in rel2templates_raw:
-        if rel in rel2sample:
-            sampled_triple = f'({rel2sample[rel][0]}, {rel}, {rel2sample[rel][1]}'
+        if rel in rel2triple_sample:
+            sampled_triple = f'({rel2triple_sample[rel][0]}, {rel}, {rel2triple_sample[rel][1]}'
             prompt = 'Given the Freebase relation {} and a triple example of the relation {}, generate 10 templates that can be used to ask question about the relation. Use [SUBJECT] to identify subject entity (not the one in the example).'.format(
                 rel, sampled_triple)
             response = gen_response(prompt, verbose=False)
@@ -56,7 +57,6 @@ def decode_template(sample):
             else:
                 templates.append(line[3:])
     if len(templates) != 10:
-        print(sample)
         return None
     return templates
     
@@ -68,8 +68,8 @@ for rel in rel2templates_raw:
 pseudo_questions = []
 
 for rel in all_relations:
-    if rel in rel2templates and rel in rel2sample:
-        subjects = rel2sample[rel]
+    if rel in rel2templates and rel in rel2subject_sample:
+        subjects = rel2subject_sample[rel]
         if len(subjects) < 10:
             subjects = subjects * math.ceil(10 / len(subjects))
         random.shuffle(subjects)
@@ -83,4 +83,4 @@ for rel in all_relations:
                 'question': template.replace('[SUBJECT]', subject['label'])
             })
 
-json.dump(pseudo_questions, open('../data/pseudo_questions.json', 'w'))
+json.dump(pseudo_questions, open('data/pseudo_questions.json', 'w'))

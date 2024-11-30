@@ -4,13 +4,13 @@ from transformers import AutoTokenizer
 from datasets import load_dataset
 import numpy as np
 
-relations = json.load(open('../data/relations_with_triples.json'))
+relations = json.load(open('data/relations_with_triples.json'))
 
 """ assigning relation ID """
 special_tokens_rel = []
 relation2semid = {}
 
-for rel in relations:
+for rel in tqdm(relations):
     rel_classes = rel.split('.')
     rel_identifier = []
     for i, rel_class in enumerate(rel_classes):
@@ -33,10 +33,10 @@ tokenizer.add_tokens('<SEP>')
 # different from the special tokens in the original paper, but do not have any impact on the performance since the token name is just a placeholder.
 # [relation to id] and <SEP> is not used in this work, [query to id] refers to [index] in the paper, [reasoning] refers to [retrieval] in the paper.
 
-tokenizer.save_pretrained('../t5-freebase-rel-atomic')
+tokenizer.save_pretrained('tokenizer/t5-freebase-rel-atomic')
 
 """ creating indexing data (pseudo question) """
-pseudo_questions_raw = json.load(open('../data/pseudo_questions_raw.json'))
+pseudo_questions_raw = json.load(open('data/pseudo_questions.json'))
 def create_training_data_pseudo_question(prefix, dataset):
     data = []
     for sample in dataset:
@@ -51,9 +51,9 @@ def create_training_data_pseudo_question(prefix, dataset):
 pseudo_questions_data = create_training_data_pseudo_question('[query to id] ', pseudo_questions_raw)
 
 """ creating retrieval data (subgraph retrieval) """
-webqsp_paths = json.load(open('../data/gpt_cleaned_webqsp_path.json'))
-cwq_paths = json.load(open('../data/gpt_cleaned_cwq_path.json'))
-# shortest paths between topic entity and answer entity
+webqsp_paths = json.load(open('data/gpt_cleaned_webqsp_path.json'))
+cwq_paths = json.load(open('data/gpt_cleaned_cwq_path.json'))
+# shortest paths between topic entity and answer entity cleaned by gpt
 
 webqsp_raw = load_dataset("rmanluo/RoG-webqsp", split='train')
 cwq_raw = load_dataset("rmanluo/RoG-cwq", split='train')
@@ -125,6 +125,6 @@ def save_dataset(dataset, path):
     dataset = load_dataset("json", data_files=f'{path}.json')
     dataset["train"].save_to_disk(path)
 
-save_dataset(pseudo_questions_dataset, '../data/pseudo_questions')
-save_dataset(webqsp_dataset, '../data/webqsp_train')
-save_dataset(cwq_dataset, '../data/cwq_train')
+save_dataset(pseudo_questions_dataset, 'processed_data/pseudo_questions')
+save_dataset(webqsp_dataset, 'processed_data/webqsp_train')
+save_dataset(cwq_dataset, 'processed_data/cwq_train')

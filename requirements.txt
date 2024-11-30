@@ -1,0 +1,5 @@
+transformers==4.44.1
+sparqlwrapper
+tqdm
+datasets
+openai

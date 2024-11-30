@@ -183,8 +183,8 @@ def process_triples(triples, connector=', '):
     return processed_triples
 
 def gen_sft_data(args):
-    webqsp_raw = load_dataset("rmanluo/RoG-webqsp", split='train')
-    cwq_raw = load_dataset("rmanluo/RoG-cwq", split='train')
+    webqsp_raw = load_dataset("rmanluo/RoG-webqsp", split=args.set)
+    cwq_raw = load_dataset("rmanluo/RoG-cwq", split=args.set)
     webqsp_predicted_paths = json.load(open(args.webqsp_predicted_paths))
     cwq_predicted_paths = json.load(open(args.cwq_predicted_paths))
     webqsp_predicted_chains, webqsp_predicted_triples = get_chain(webqsp_raw, webqsp_predicted_paths)
@@ -267,6 +267,6 @@ if __name__ == '__main__':
     parser.add_argument("--set", default="train")
     parser.add_argument("--webqsp_predicted_paths")
     parser.add_argument("--cwq_predicted_paths")
-    parser.add_argument("--output_dir", default="../sft/")
+    parser.add_argument("--output_dir", default="processed_data/")
     args = parser.parse_args()
     gen_sft_data(args)

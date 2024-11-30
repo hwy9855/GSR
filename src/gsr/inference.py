@@ -4,6 +4,8 @@ from argparse import ArgumentParser
 import numpy as np
 from tqdm import tqdm
 import json
+import string
+import re
 
 def run_inference(args):
     if args.train:
@@ -16,7 +18,7 @@ def run_inference(args):
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model_path, device_map="auto").eval()
 
-    def evaluate_model(input_text, nums_beam=args.top_k):
+    def evaluate_model(input_text, nums_beam=args.nums_beam):
         input = tokenizer(input_text, return_tensors='pt')
         outputs = model.generate(input_ids=input["input_ids"].cuda(), do_sample=False, max_new_tokens=512,
                                 num_beams=nums_beam, num_return_sequences=nums_beam)
@@ -94,11 +96,11 @@ def get_f1(precision, recall):
 
 
 def decode_predictions(pred):
-    rels = pred.split('<SEP>')
+    rels = pred.split('<rel_0')[1:]
     pred_path = []
     for rel in rels:
         decoded_rel = []
-        rel_tokens = rel.split('>')[:-1]
+        rel_tokens = ('<rel_0' + rel).split('>')[:-1]
         for token in rel_tokens:
             decoded_rel.append(token[7:])
         pred_path.append('.'.join(decoded_rel))
@@ -153,38 +155,26 @@ def run_eval(args, rule_paths):
         eval_data = load_dataset('rmanluo/RoG-' + data_name, split='test')
         eval_data = list(eval_data)
         if isinstance(rule_paths, str):
-            predictions = json.load(open(args.predictions_path + f'_{data_name}.json'))
+            predictions = json.load(open(rule_paths + f'_{data_name}.json'))
         else:
             predictions = rule_paths[data_name]
 
         answers = get_ans(eval_data, predictions, args.top_m, args.top_n)
-
-        voted_answers = []
-        for answer in answers:
-            voted_answers.append(get_majority_ans(answer, 5))
         
         precision = []
         recall = []
         hits = []
         for sample, preds in tqdm(zip(eval_data, answers)):
-            references = sample['answer']
-            preds = list(set(preds))
-            matched = 0
-            preds_str = ' '.join(preds)
-
-            for reference in references:
-                if match(preds_str, reference):
-                    matched += 1
-
-            if matched > 0:
-                precision.append(matched / len(preds))
-                recall.append(matched / len(references))
+            predictions = set(preds)
+            cover = set(sample['answer']).intersection(set(predictions))
+            if len(cover):
                 hits.append(1)
+                recall.append(len(cover) / len(sample['answer']))
+                precision.append(len(cover) / len(predictions))
             else:
-                precision.append(0)
-                recall.append(0)
                 hits.append(0)
-
+                recall.append(0)
+                precision.append(0)
 
         macro_f1, micro_f1 = get_f1(precision, recall)
         print(data_name + ' all:')
@@ -194,51 +184,18 @@ def run_eval(args, rule_paths):
         print(f'Macro F1:\t{macro_f1}')
         print(f'Micro F1:\t{micro_f1}')
 
-        precision = []
-        recall = []
-        hits1 = []
-        for sample, preds in tqdm(zip(eval_data, voted_answers)):
-            references = sample['answer']
-            preds = list(set(preds))
-            matched = 0
-            hit1 = 0
-            preds_str = ' '.join(preds)
-
-            for reference in references:
-                if match(preds_str, reference):
-                    matched += 1
-                if preds and match(preds[0], reference):
-                    hit1 = 1
-
-            hits1.append(hit1)
-            if matched > 0:
-                precision.append(matched / len(preds))
-                recall.append(matched / len(references))
-            else:
-                precision.append(0)
-                recall.append(0)
-
-
-        macro_f1, micro_f1 = get_f1(precision, recall)
-        print(data_name + ' voted:')
-        print(f'P:\t{np.mean(precision)}')
-        print(f'R:\t{np.mean(recall)}')
-        print(f'Hits@1:\t{np.mean(hits1)}')
-        print(f'Macro F1:\t{macro_f1}')
-        print(f'Micro F1:\t{micro_f1}')
-
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("--model_path", required=True)
-    parser.add_argument("--tokenizer_path", required=True)
+    parser.add_argument("--model_path")
+    parser.add_argument("--tokenizer_path")
     parser.add_argument("--output_dir", default="rule_paths/")
-    parser.add_argument("--top_k", default=10)
+    parser.add_argument("--nums_beam", default=10, type=int)
     parser.add_argument("--train", action='store_true')
 
     parser.add_argument("--rule_paths", default="rule_paths/")
-    parser.add_argument("--top_m", default=3)
-    parser.add_argument("--top_n", default=3)
+    parser.add_argument("--top_m", default=3, type=int)
+    parser.add_argument("--top_n", default=3, type=int)
     parser.add_argument("--eval_only", action='store_true')
 
     args = parser.parse_args()

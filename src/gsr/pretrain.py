@@ -23,14 +23,15 @@ def run_pretrain(args):
             train_dataset[-1] = train_dataset[-1].select(range(int(len(train_dataset[-1]) * args.low_resource)))
     train_dataset = concatenate_datasets(train_dataset)
 
-    eval_dataset = []
-    for data_name in args.eval_data:
-        assert data_name in DATASET_DICT, 'Invalid evaluation data name: {}. Please specify dataset(s) from {}'.format(data_name, str(DATASET_DICT))
-        eval_dataset.append(load_from_disk(os.path.join(args.data_path, DATASET_DICT[data_name] + '/')).select(range(1000)))
-    eval_dataset = concatenate_datasets(eval_dataset)
-    # just for checking train progress
+    if args.eval_data is not None:
+        eval_dataset = []
+        for data_name in args.eval_data:
+            assert data_name in DATASET_DICT, 'Invalid evaluation data name: {}. Please specify dataset(s) from {}'.format(data_name, str(DATASET_DICT))
+            eval_dataset.append(load_from_disk(os.path.join(args.data_path, DATASET_DICT[data_name] + '/')).select(range(1000)))
+        eval_dataset = concatenate_datasets(eval_dataset)
+        # just for checking train progress
 
-    tokenizer = AutoTokenizer.from_pretrained(os.path.join(args.tokenizer_path, "t5-freebase-rel" + ('-atomic' if args.atomic else '')))
+    tokenizer = AutoTokenizer.from_pretrained(os.path.join(args.tokenizer_path, "t5-freebase-rel-atomic"))
 
     # huggingface hub model id
     model_id = args.model_id
@@ -66,40 +67,64 @@ def run_pretrain(args):
         pad_to_multiple_of=8
     )
 
-    output_dir = os.path.join(args.output_dir, '-'.join([args.model_id] + args.pretrain_data))
+    output_dir = os.path.join(args.output_dir, 'pt-' + '-'.join([args.model_id] + args.pretrain_data))
     if args.low_resource < 1:
         output_dir += f'_{args.low_resource:.2f}'
 
     # Define training args
-    training_args = Seq2SeqTrainingArguments(
-        output_dir=output_dir,
-        per_device_train_batch_size=args.bsz,
-        per_device_eval_batch_size=args.bsz,
-        learning_rate=args.lr, # higher learning rate
-        num_train_epochs=args.num_epochs,
-        logging_dir=f"{output_dir}/logs",
-        logging_strategy="steps",
-        logging_steps=500,
-        save_strategy="epoch",
-        save_total_limit=1,
-        report_to="tensorboard",
-        eval_steps=500,
-        evaluation_strategy="steps",
-        predict_with_generate=True,
-        bf16=True,
-    )
+    if args.eval_data is not None:
+        training_args = Seq2SeqTrainingArguments(
+            output_dir=output_dir,
+            per_device_train_batch_size=args.bsz,
+            per_device_eval_batch_size=args.bsz,
+            learning_rate=args.lr, # higher learning rate
+            num_train_epochs=args.num_epochs,
+            logging_dir=f"{output_dir}/logs",
+            logging_strategy="steps",
+            logging_steps=500,
+            save_strategy="epoch",
+            save_total_limit=1,
+            report_to="tensorboard",
+            eval_steps=500,
+            evaluation_strategy="steps",
+            predict_with_generate=True,
+            bf16=True,
+        )
+    else:
+        training_args = Seq2SeqTrainingArguments(
+            output_dir=output_dir,
+            per_device_train_batch_size=args.bsz,
+            per_device_eval_batch_size=args.bsz,
+            learning_rate=args.lr, # higher learning rate
+            num_train_epochs=args.num_epochs,
+            logging_dir=f"{output_dir}/logs",
+            logging_strategy="steps",
+            logging_steps=500,
+            save_strategy="epoch",
+            save_total_limit=1,
+            report_to="tensorboard",
+            bf16=True,
+        )
 
     print(training_args)
 
     # Create Trainer instance
-    trainer = Seq2SeqTrainer(
-        model=model,
-        args=training_args,
-        data_collator=data_collator,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        compute_metrics=compute_metrics
-    )
+    if args.eval_data is not None:
+        trainer = Seq2SeqTrainer(
+            model=model,
+            args=training_args,
+            data_collator=data_collator,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            compute_metrics=compute_metrics
+        )
+    else:
+        trainer = Seq2SeqTrainer(
+            model=model,
+            args=training_args,
+            data_collator=data_collator,
+            train_dataset=train_dataset,
+        )
     model.config.use_cache = False  # silence the warnings. Please re-enable for inference!
 
     trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
@@ -107,13 +132,13 @@ def run_pretrain(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--model_id", default="t5-base")
-    parser.add_argument("--data_path", default="../data")
-    parser.add_argument("--tokenizer_path", default="./")
-    parser.add_argument("--output_dir", default="pretrained_models")
+    parser.add_argument("--data_path", default="processed_data/")
+    parser.add_argument("--tokenizer_path", default="tokenizer/")
+    parser.add_argument("--output_dir", default="trained_models")
 
     parser.add_argument("--bsz", type=int, default=128)
-    parser.add_argument("--lr", type=float, default=0.0001)
-    parser.add_argument("--num_epochs", type=int, default=20)
+    parser.add_argument("--lr", type=float, default=0.0005)
+    parser.add_argument("--num_epochs", type=int, default=50)
 
     parser.add_argument("--pretrain_data", nargs='+', required=True)
     parser.add_argument("--eval_data", nargs='+')
