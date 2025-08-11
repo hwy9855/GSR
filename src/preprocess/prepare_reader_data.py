@@ -33,7 +33,7 @@ def decode_predictions_wo_sep(pred):
     return pred_path
 
 def get_sft_data(question, all_paths, max_input_length, tokenizer, prompt_type="llama2_chat", prompt_head=['reasoning paths', 'Reasoning Paths']):
-    if not len(all_paths):
+    if not len(all_paths) and args.set == 'train':
         return None
     if not question.endswith("?"):
         question = question + "?"
@@ -45,7 +45,7 @@ def get_sft_data(question, all_paths, max_input_length, tokenizer, prompt_type="
 
     prompt = PROMPT_DICT[prompt_type].format(system_prompt, get_user_prompt(all_paths, question))
 
-    if len(prompt.split()) > 8000:
+    if len(prompt.split()) > 8000 and args.set == 'train':
         return None
     
     if not len(tokenizer(prompt)['input_ids']) > max_input_length:
@@ -208,7 +208,7 @@ def gen_sft_data(args):
         for path in predicted_chain:
             paths += path
         prompt = get_sft_data(question, paths, 4000, tokenizer, prompt_type)
-        if not prompt:
+        if not prompt and args.set == 'train':
             continue
         completion = '\n'.join(sample['answer'])
         sft_data_train.append({
@@ -222,7 +222,7 @@ def gen_sft_data(args):
         for path in predicted_chain:
             paths += path
         prompt = get_sft_data(question, paths, 4000, tokenizer, prompt_type)
-        if not prompt:
+        if not prompt and args.set == 'train':
             continue
         completion = '\n'.join(sample['answer'])
         sft_data_train.append({
@@ -237,7 +237,7 @@ def gen_sft_data(args):
     for sample, predicted_triples in tqdm(zip(webqsp_raw, webqsp_predicted_triples)):
         question = sample['question']
         prompt = get_sft_data(question, process_triples(predicted_triples), 4000, tokenizer, prompt_type, ['KG triples', 'KG Triples'])
-        if not prompt:
+        if not prompt and args.set == 'train':
             continue
         completion = '\n'.join(sample['answer'])
         sft_data_train.append({
@@ -248,7 +248,7 @@ def gen_sft_data(args):
     for sample, predicted_triples in tqdm(zip(cwq_raw, cwq_predicted_triples)):
         question = sample['question']
         prompt = get_sft_data(question, process_triples(predicted_triples), 4000, tokenizer, prompt_type, ['KG triples', 'KG Triples'])
-        if not prompt:
+        if not prompt and args.set == 'train':
             continue
         completion = '\n'.join(sample['answer'])
         sft_data_train.append({

@@ -157,12 +157,21 @@ def eval(args):
         print(np.mean(all_tokens))
         return eval_data
 
-    test_set = load_dataset(f"rmanluo/RoG-{args.test_data}", split='test')
-    if args.prediction_path:    
-        predicted_path = json.load(open(args.prediction_path))
+    if args.prompt_path:
+        eval_data = json.load(open(args.prompt_path))
+        if args.test_data == 'webqsp':
+            eval_data = eval_data[:1628]
+        elif args.test_data == 'cwq':
+            eval_data = eval_data[1628:]
+        else:
+            assert f"{args.test_data} is currently not supported."
     else:
-        predicted_path = None
-    eval_data = build_eval_data(test_set, predicted_path)
+        test_set = load_dataset(f"rmanluo/RoG-{args.test_data}", split='test')
+        if args.prediction_path:
+            predicted_path = json.load(open(args.prediction_path))
+        else:
+            predicted_path = None
+        eval_data = build_eval_data(test_set, predicted_path)
 
     print(eval_data[0])
     
@@ -207,6 +216,7 @@ if __name__ == '__main__':
     parser.add_argument("--model_path")
     parser.add_argument("--test_data")
     parser.add_argument("--prediction_path")
+    parser.add_argument("--prompt_path")
     parser.add_argument("--max_seq_length", type=int, default=4096)
     parser.add_argument("--use_triple", action='store_true')
 

@@ -122,10 +122,10 @@ python gsr/inference.py \
 ```
 The above script will generate the subgraph IDs for the test set of WebQSP and CWQ datasets. If you want to generate the subgraph IDs for the training set (mandatory step for generating reader training data), you can add `--train` argument. In addition, the above script will run automatic evaluation for the generated subgraph IDs. If you have the generated subgraph IDs, you can also run the script for evaluation only.
 ```bash
-ptyhon gsr/inference.py
-    --rule_paths <path to the predicted subgraph IDs>
-    --top_m <top m subgraphs ID to be considered>
-    --top_n <top n subgraphs to be evaluated>
+ptyhon gsr/inference.py \
+    --rule_paths <path to the predicted subgraph IDs> \
+    --top_m <top m subgraphs ID to be considered> \
+    --top_n <top n subgraphs to be evaluated> \
     --eval_only
 ```
 Here `top_m` is the maximum number of subgraph IDs to be considered, and `top_n` is the maximum number of subgraphs to be evaluated. Typically `top_m` >= `top_n` since there exist invalid subgraph IDs.
@@ -133,13 +133,13 @@ Here `top_m` is the maximum number of subgraph IDs to be considered, and `top_n`
 #### Inference Reader
 After generating the subgraph IDs, you can use the following script to generate the predictions of a finetuned reader model.
 ```bash
-python inference_reader.py
-    --model_path <path to the trained reader model>
-    --test_data <path to the generated test data>
-    --prediction_path <output path for the predictions>
+python inference_reader.py \
+    --model_path <path to the trained reader model> \
+    --test_data <webqsp / cwq> \
+    --prompt_path <path to the > \
     --max_seq_length <maximum sequence length>
 ```
-The above script will generate the predictions for the given test_data, which is the generated [previously](#reader-data). The script is by default expecting subgraph as reasoning chains data, if you want to use subgraph as triples data, simple activate `--use_triple`. The above script also compute the evaluation metrics for the generated predictions.
+The above script will generate the predictions for the given test_data with prompts from prompt_path generated in [previous steps](#reader-data). **Noted that you need to generate the prompt for test data with `preprocess/prepare_reader_data.py` before running this script!!!** The above script also compute the evaluation metrics for the generated predictions.
 
 ### Contact
 If you have any questions, please feel free to contact Wenyu Huang (w.huang@ed.ac.uk) or Jeff Z. Pan (jeff.z.pan@ed.ac.uk)
